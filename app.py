@@ -97,12 +97,16 @@ def get_calendar_events():
     
     for employee, schedules in employees.items():
         for schedule in schedules:
-            events.append({
+            event = {
                 'title': f"{employee}: {schedule['start_time']}-{schedule['end_time']}",
-                'start': f"{schedule['date']}T{schedule['start_time']}",
-                'end': f"{schedule['date']}T{schedule['end_time']}",
-                'employee': employee
-            })
+                'start': schedule['date'],
+                'extendedProps': {
+                    'employee': employee,
+                    'start_time': schedule['start_time'],
+                    'end_time': schedule['end_time']
+                }
+            }
+            events.append(event)
     
     return jsonify(events)
 
