@@ -1,3 +1,4 @@
+<!-- Updated schedule functionality -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -169,7 +170,7 @@
             {% endfor %}
         </ul>
 
-        <form action="/schedule" method="post">
+        <form id="scheduleForm" onsubmit="addSchedule(event)">
             <select name="employee" required>
                 {% for employee in employees %}
                     <option value="{{ employee }}">{{ employee }}</option>
@@ -185,7 +186,9 @@
             <input type="date" name="view_date" required>
             <button type="submit">View Schedule</button>
         </form>
-        <div id="scheduleResults" style="margin-top: 20px;"></div>
+
+        <div id="scheduleResults"></div>
+    </div>
 
     <!-- Calendar Section -->
     <div class="calendar-section">
@@ -209,7 +212,7 @@
     </div>
 
     <!-- Modal for adding/editing events -->
-    <div id="eventModal" class="modal" style="display: none;">
+    <div id="eventModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
             <h2>Schedule Event</h2>
@@ -324,6 +327,29 @@
                     event.setProp('display', 'auto');
                 } else {
                     event.setProp('display', 'none');
+                }
+            });
+        }
+
+        function addSchedule(event) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+
+            fetch('/schedule', {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if(response.ok) {
+                    // Refresh the calendar
+                    calendar.refetchEvents();
+                    // Clear the form
+                    form.reset();
+                    // Optionally refresh the view schedule if a date was selected
+                    const viewScheduleDate = document.querySelector('#viewScheduleForm input[name="view_date"]').value;
+                    if (viewScheduleDate === formData.get('date')) {
+                        document.getElementById('viewScheduleForm').dispatchEvent(new Event('submit'));
+                    }
                 }
             });
         }
