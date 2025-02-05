@@ -112,38 +112,45 @@ def get_calendar_events():
 
 @app.route('/update_schedule', methods=['POST'])
 def update_schedule():
-    employee = request.form.get('employee')
-    date = request.form.get('date')
-    start_time = request.form.get('start_time')
-    end_time = request.form.get('end_time')
-    old_date = request.form.get('old_date')
-    old_start = request.form.get('old_start')
-    old_end = request.form.get('old_end')
+    try:
+        employee = request.form.get('employee')
+        date = request.form.get('date')
+        start_time = request.form.get('start_time')
+        end_time = request.form.get('end_time')
+        old_date = request.form.get('old_date')
+        old_start = request.form.get('old_start')
+        old_end = request.form.get('old_end')
 
-    print(f"Updating schedule: {employee} from {old_date} {old_start}-{old_end} to {date} {start_time}-{end_time}")  # Debug line
+        print(f"Updating schedule for {employee}")
+        print(f"Old: {old_date} {old_start}-{old_end}")
+        print(f"New: {date} {start_time}-{end_time}")
 
-    if employee and date and start_time and end_time and old_date and old_start and old_end:
         employees = load_data()
+        
+        # Find and remove old schedule
         if employee in employees:
-            # Find and remove the old schedule
-            for schedule in employees[employee]:
-                if (schedule['date'] == old_date and 
-                    schedule['start_time'] == old_start and 
-                    schedule['end_time'] == old_end):
-                    employees[employee].remove(schedule)
-                    break
+            employees[employee] = [
+                s for s in employees[employee]
+                if not (s['date'] == old_date and 
+                       s['start_time'] == old_start and 
+                       s['end_time'] == old_end)
+            ]
             
-            # Add the new schedule
-            schedule = {
+            # Add new schedule
+            new_schedule = {
                 'date': date,
                 'start_time': start_time,
                 'end_time': end_time
             }
-            employees[employee].append(schedule)
+            employees[employee].append(new_schedule)
             save_data(employees)
             return jsonify({'status': 'success'})
-    
-    return jsonify({'status': 'error', 'message': 'Invalid data provided'}), 400
+        
+        return jsonify({'status': 'error', 'message': 'Employee not found'}), 404
+        
+    except Exception as e:
+        print(f"Error updating schedule: {str(e)}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
