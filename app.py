@@ -113,6 +113,7 @@ def get_calendar_events():
 @app.route('/update_schedule', methods=['POST'])
 def update_schedule():
     try:
+        # Get form data
         employee = request.form.get('employee')
         date = request.form.get('date')
         start_time = request.form.get('start_time')
@@ -121,35 +122,45 @@ def update_schedule():
         old_start = request.form.get('old_start')
         old_end = request.form.get('old_end')
 
-        print(f"Updating schedule for {employee}")
-        print(f"Old: {old_date} {old_start}-{old_end}")
-        print(f"New: {date} {start_time}-{end_time}")
+        print(f"Received update request:")
+        print(f"Employee: {employee}")
+        print(f"Old schedule: {old_date} {old_start}-{old_end}")
+        print(f"New schedule: {date} {start_time}-{end_time}")
 
+        # Load current data
         employees = load_data()
         
-        # Find and remove old schedule
-        if employee in employees:
-            employees[employee] = [
-                s for s in employees[employee]
-                if not (s['date'] == old_date and 
-                       s['start_time'] == old_start and 
-                       s['end_time'] == old_end)
-            ]
-            
-            # Add new schedule
-            new_schedule = {
-                'date': date,
-                'start_time': start_time,
-                'end_time': end_time
-            }
-            employees[employee].append(new_schedule)
-            save_data(employees)
-            return jsonify({'status': 'success'})
+        if employee not in employees:
+            return jsonify({'status': 'error', 'message': 'Employee not found'}), 404
+
+        # Remove old schedule
+        updated = False
+        for i, schedule in enumerate(employees[employee]):
+            if (schedule['date'] == old_date and 
+                schedule['start_time'] == old_start and 
+                schedule['end_time'] == old_end):
+                employees[employee].pop(i)
+                updated = True
+                break
         
-        return jsonify({'status': 'error', 'message': 'Employee not found'}), 404
+        if not updated:
+            return jsonify({'status': 'error', 'message': 'Original schedule not found'}), 404
+
+        # Add new schedule
+        new_schedule = {
+            'date': date,
+            'start_time': start_time,
+            'end_time': end_time
+        }
+        employees[employee].append(new_schedule)
         
+        # Save changes
+        save_data(employees)
+        print("Schedule updated successfully")
+        return jsonify({'status': 'success'})
+
     except Exception as e:
-        print(f"Error updating schedule: {str(e)}")
+        print(f"Error in update_schedule: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 if __name__ == '__main__':
