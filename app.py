@@ -44,7 +44,7 @@ def index():
 
 @app.route('/add_employee', methods=['POST'])
 def add_employee():
-    name = request.form.get('name')
+    name = request.form.get('employee_name')
     employees = load_data()
     if name and name not in employees:
         employees[name] = []
