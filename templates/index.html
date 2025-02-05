@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Employee Scheduler</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="section">
+            <h2>Add New Employee</h2>
+            <form action="{{ url_for('add_employee') }}" method="post">
+                <input type="text" name="name" placeholder="Employee Name" required>
+                <button type="submit">Add Employee</button>
+            </form>
+        </div>
+
+        <div class="section">
+            <h2>Add Schedule</h2>
+            <form action="{{ url_for('add_schedule') }}" method="post">
+                <select name="employee" required>
+                    {% for employee in employees %}
+                    <option value="{{ employee }}">{{ employee }}</option>
+                    {% endfor %}
+                </select>
+                <input type="text" name="date" class="datepicker" placeholder="Select Date" required>
+                <input type="text" name="start_time" class="timepicker" placeholder="Start Time" required>
+                <input type="text" name="end_time" class="timepicker" placeholder="End Time" required>
+                <button type="submit">Add Schedule</button>
+            </form>
+        </div>
+
+        <div class="section">
+            <h2>View Schedule</h2>
+            <input type="text" id="view_date" class="datepicker" placeholder="Select Date">
+            <button onclick="viewSchedule()">View Schedule</button>
+            <div id="schedule_display"></div>
+        </div>
+    </div>
+
+    <script>
+        flatpickr(".datepicker", {
+            dateFormat: "Y-m-d"
+        });
+        
+        flatpickr(".timepicker", {
+            enableTime: true,
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true
+        });
+
+        function viewSchedule() {
+            const date = document.getElementById('view_date').value;
+            fetch('/view_schedule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `view_date=${date}`
+            })
+            .then(response => response.json())
+            .then(schedules => {
+                const display = document.getElementById('schedule_display');
+                display.innerHTML = '';
+                schedules.forEach(schedule => {
+                    display.innerHTML += `
+                        <div class="schedule-item">
+                            <p>Employee: ${schedule.employee}</p>
+                            <p>Time: ${schedule.start_time} - ${schedule.end_time}</p>
+                        </div>
+                    `;
+                });
+            });
+        }
+    </script>
+</body>
+</html>
