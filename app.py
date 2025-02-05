@@ -87,5 +87,22 @@ def view_schedule():
     
     return jsonify(schedules)
 
+@app.route('/get_calendar_events')
+def get_calendar_events():
+    employees = load_data()
+    events = []
+    
+    for employee, schedules in employees.items():
+        for schedule in schedules:
+            events.append({
+                'title': f"{employee}: {schedule['start_time']}-{schedule['end_time']}",
+                'start': f"{schedule['date']}T{schedule['start_time']}",
+                'end': f"{schedule['date']}T{schedule['end_time']}",
+                'employee': employee
+            })
+    
+    return jsonify(events)
+
+
 if __name__ == '__main__':
     app.run(debug=True)
