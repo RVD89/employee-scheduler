@@ -5,6 +5,126 @@
     <!-- Calendar CSS and JS -->
     <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+    <style>
+        /* Employee Section Styles */
+        .employee-section {
+            max-width: 1100px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        .employee-section form {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .employee-section input,
+        .employee-section select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .employee-section button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .employee-section button:hover {
+            background-color: #45a049;
+        }
+
+        .employee-section ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .employee-section li {
+            padding: 8px;
+            margin: 4px 0;
+            background-color: white;
+            border-radius: 4px;
+        }
+
+        /* Calendar Styles */
+        #calendar {
+            max-width: 1100px;
+            margin: 20px auto;
+            padding: 0 10px;
+        }
+
+        .calendar-controls {
+            max-width: 1100px;
+            margin: 20px auto;
+            padding: 0 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .view-buttons button, .employee-filters button {
+            margin: 0 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #eventForm {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        #eventForm input, #eventForm select {
+            padding: 5px;
+            margin: 5px 0;
+        }
+
+        #employeeFilter {
+            min-width: 200px;
+            padding: 5px;
+        }
+
+        .fc-event {
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
     <!-- Employee Management Section -->
@@ -80,61 +200,106 @@
         </div>
     </div>
 
-    <!-- Previous JavaScript remains the same -->
     <script>
-        // ... (previous calendar JavaScript code remains the same) ...
+        document.addEventListener('DOMContentLoaded', function() {
+            // Generate random colors for employees
+            const employeeColors = {};
+            {% for employee in employees %}
+                employeeColors['{{ employee }}'] = '#' + Math.floor(Math.random()*16777215).toString(16);
+            {% endfor %}
+
+            var calendarEl = document.getElementById('calendar');
+            window.calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                },
+                height: 'auto',
+                selectable: true,
+                editable: true,
+                events: '/get_calendar_events',
+                eventClick: function(info) {
+                    showEventModal(info.event);
+                },
+                select: function(info) {
+                    showEventModal(null, info);
+                },
+                eventContent: function(arg) {
+                    return {
+                        html: `<div style="background-color: ${employeeColors[arg.event.extendedProps.employee]}; padding: 2px; border-radius: 3px;">
+                            ${arg.event.title}
+                        </div>`
+                    };
+                }
+            });
+            calendar.render();
+
+            // Event modal functionality
+            const modal = document.getElementById("eventModal");
+            const span = document.getElementsByClassName("close")[0];
+            const eventForm = document.getElementById("eventForm");
+
+            span.onclick = function() {
+                modal.style.display = "none";
+            }
+
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+
+            eventForm.onsubmit = function(e) {
+                e.preventDefault();
+                const formData = new FormData();
+                formData.append('employee', document.getElementById('eventEmployee').value);
+                formData.append('date', document.getElementById('eventDate').value);
+                formData.append('start_time', document.getElementById('eventStart').value);
+                formData.append('end_time', document.getElementById('eventEnd').value);
+
+                fetch('/schedule', {
+                    method: 'POST',
+                    body: formData
+                }).then(response => {
+                    if(response.ok) {
+                        modal.style.display = "none";
+                        calendar.refetchEvents();
+                    }
+                });
+            }
+        });
+
+        function showEventModal(event, selectInfo) {
+            const modal = document.getElementById("eventModal");
+            if (event) {
+                const [employee, times] = event.title.split(': ');
+                const [start, end] = times.split('-');
+                document.getElementById('eventEmployee').value = employee;
+                document.getElementById('eventDate').value = event.start.toISOString().split('T')[0];
+                document.getElementById('eventStart').value = start;
+                document.getElementById('eventEnd').value = end;
+            } else if (selectInfo) {
+                document.getElementById('eventDate').value = selectInfo.startStr.split('T')[0];
+                document.getElementById('eventStart').value = '09:00';
+                document.getElementById('eventEnd').value = '17:00';
+            }
+            modal.style.display = "block";
+        }
+
+        function applyFilters() {
+            const selectedEmployees = Array.from(document.getElementById('employeeFilter').selectedOptions)
+                .map(option => option.value);
+            
+            calendar.getEvents().forEach(event => {
+                if (selectedEmployees.includes(event.extendedProps.employee)) {
+                    event.setProp('display', 'auto');
+                } else {
+                    event.setProp('display', 'none');
+                }
+            });
+        }
     </script>
-
-    <style>
-        /* Previous styles remain the same */
-        .employee-section {
-            max-width: 1100px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-            border-radius: 5px;
-        }
-
-        .employee-section form {
-            margin: 20px 0;
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .employee-section input,
-        .employee-section select {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        .employee-section button {
-            padding: 8px 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .employee-section button:hover {
-            background-color: #45a049;
-        }
-
-        .employee-section ul {
-            list-style-type: none;
-            padding: 0;
-        }
-
-        .employee-section li {
-            padding: 8px;
-            margin: 4px 0;
-            background-color: white;
-            border-radius: 4px;
-        }
-
-        /* Previous calendar styles remain the same */
-    </style>
 </body>
 </html>
