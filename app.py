@@ -51,23 +51,26 @@ def add_employee():
         save_data(employees)
     return redirect(url_for('index'))
 
-@app.route('/add_schedule', methods=['POST'])
+@app.route('/schedule', methods=['POST'])
 def add_schedule():
     employee = request.form.get('employee')
     date = request.form.get('date')
     start_time = request.form.get('start_time')
     end_time = request.form.get('end_time')
+
+    if employee and date and start_time and end_time:
+        employees = load_data()
+        if employee in employees:
+            schedule = {
+                'date': date,
+                'start_time': start_time,
+                'end_time': end_time
+            }
+            employees[employee].append(schedule)
+            save_data(employees)
+            return jsonify({'status': 'success'})
     
-    employees = load_data()
-    if employee in employees:
-        schedule = {
-            'date': date,
-            'start_time': start_time,
-            'end_time': end_time
-        }
-        employees[employee].append(schedule)
-        save_data(employees)
-    return redirect(url_for('index'))
+    return jsonify({'status': 'error'}), 400
 
 @app.route('/view_schedule', methods=['POST'])
 def view_schedule():
