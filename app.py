@@ -16,7 +16,7 @@ def keep_alive():
             print("Ping sent to keep app alive")
         except:
             pass
-        time.sleep(600)  # Ping every 10 minutes
+        time.sleep(600)  #
 
 if os.environ.get('RENDER'):
     threading.Thread(target=keep_alive).start()
