@@ -120,7 +120,9 @@ def update_schedule():
     old_start = request.form.get('old_start')
     old_end = request.form.get('old_end')
 
-    if employee and date and start_time and end_time:
+    print(f"Updating schedule: {employee} from {old_date} {old_start}-{old_end} to {date} {start_time}-{end_time}")  # Debug line
+
+    if employee and date and start_time and end_time and old_date and old_start and old_end:
         employees = load_data()
         if employee in employees:
             # Find and remove the old schedule
@@ -141,7 +143,7 @@ def update_schedule():
             save_data(employees)
             return jsonify({'status': 'success'})
     
-    return jsonify({'status': 'error'}), 400
+    return jsonify({'status': 'error', 'message': 'Invalid data provided'}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
