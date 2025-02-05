@@ -2,8 +2,24 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for
 from datetime import datetime
 import json
 import os
+import threading
+import requests
+import time
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'default-key-for-development')
+
+def keep_alive():
+    while True:
+        try:
+            requests.get('https://employee-scheduler-zmgh.onrender.com')
+            print("Ping sent to keep app alive")
+        except:
+            pass
+        time.sleep(600)  # Ping every 10 minutes
+
+if os.environ.get('RENDER'):
+    threading.Thread(target=keep_alive).start()
 
 # Ensure data directory exists
 if not os.path.exists('data'):
