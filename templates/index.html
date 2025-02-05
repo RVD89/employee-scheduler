@@ -124,6 +124,33 @@
         .fc-event {
             cursor: pointer;
         }
+
+        #scheduleResults {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #scheduleResults h4 {
+            margin-top: 15px;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        #scheduleResults ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #scheduleResults li {
+            padding: 8px;
+            margin: 4px 0;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #4CAF50;
+        }
     </style>
 </head>
 <body>
@@ -154,11 +181,11 @@
             <button type="submit">Add Schedule</button>
         </form>
 
-        <form action="/view_schedule" method="post">
+        <form id="viewScheduleForm" onsubmit="viewSchedule(event)">
             <input type="date" name="view_date" required>
             <button type="submit">View Schedule</button>
         </form>
-    </div>
+        <div id="scheduleResults" style="margin-top: 20px;"></div>
 
     <!-- Calendar Section -->
     <div class="calendar-section">
@@ -297,6 +324,53 @@
                     event.setProp('display', 'auto');
                 } else {
                     event.setProp('display', 'none');
+                }
+            });
+        }
+
+        function viewSchedule(event) {
+            event.preventDefault();
+            const date = event.target.querySelector('input[name="view_date"]').value;
+            
+            fetch('/view_schedule', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `view_date=${date}`
+            })
+            .then(response => response.json())
+            .then(schedules => {
+                const resultsDiv = document.getElementById('scheduleResults');
+                if (schedules.length === 0) {
+                    resultsDiv.innerHTML = '<p>No schedules found for this date.</p>';
+                } else {
+                    let html = `<h4>Schedules for ${date}</h4><ul>`;
+                    let totalHours = {};
+                    
+                    schedules.forEach(schedule => {
+                        // Calculate hours worked
+                        const start = new Date(`${date} ${schedule.start_time}`);
+                        const end = new Date(`${date} ${schedule.end_time}`);
+                        const hours = (end - start) / (1000 * 60 * 60);
+                        
+                        // Add to total hours for this employee
+                        if (!totalHours[schedule.employee]) {
+                            totalHours[schedule.employee] = 0;
+                        }
+                        totalHours[schedule.employee] += hours;
+                        
+                        html += `<li>${schedule.employee}: ${schedule.start_time} - ${schedule.end_time} (${hours} hours)</li>`;
+                    });
+                    
+                    // Add total hours section
+                    html += '</ul><h4>Total Hours:</h4><ul>';
+                    for (const [employee, hours] of Object.entries(totalHours)) {
+                        html += `<li>${employee}: ${hours.toFixed(2)} hours</li>`;
+                    }
+                    html += '</ul>';
+                    
+                    resultsDiv.innerHTML = html;
                 }
             });
         }
